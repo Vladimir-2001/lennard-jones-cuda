@@ -3,7 +3,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
-
+#include <random>
 #include <cmath> 
 
 using namespace std;
@@ -45,11 +45,17 @@ double alpha_i(int i) {
     return dalpha * i;
 }
 
+
+//int rd = dis(generator);
+
+std::mt19937 generator(123);
+std::uniform_int_distribution<int> dis(0, 1);
+
 int main(int argc, char* argv[]) {
 
- //   if (argc > 1) {
-//        filenames_file = string(argv[1]);
- //   }
+    //   if (argc > 1) {
+   //        filenames_file = string(argv[1]);
+    //   }
 
     if (argc > 2) {
         dalpha = atof(argv[2]);
@@ -95,8 +101,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-  //  fout << Nalphas << " # Number of subvolumes" << endl;
-  //  fout << endl;
+    //  fout << Nalphas << " # Number of subvolumes" << endl;
+    //  fout << endl;
 
     cout << setw(tabsize) << "t" << " "
         << setw(tabsize) << "nevents" << " "
@@ -112,22 +118,21 @@ int main(int argc, char* argv[]) {
     cout << endl;
 
 
-    float ycut[100] = {00};
 
-    { 
+    
 
         for (int ifile = 0; ifile < filenames.size(); ifile++) {
             long int ind1 = 0;
             double t = times[ifile];
 
-            fout << t << " # Time" << endl;
+         //   fout << t << " # Time" << endl;
             cout << t << " # Time" << endl;
 
             vector<NumberStatistics> stats(14 * Nalphas);
 
             //Mean shift for alpha*N
-            for (int i=0;i<Nalphas;i++)
-                stats[i].SetMeanShift(200 * i / Nalphas);
+            for (int i = 0; i < Nalphas; i++)
+                stats[i].SetMeanShift(400 * i / Nalphas);
 
             long long nevents = 0;
             double rho = 0.1;
@@ -141,7 +146,7 @@ int main(int argc, char* argv[]) {
                 ifstream fin0(filenames_file[j]);
                 if (fin0.is_open()) {
                     string file;
-                    filenames2.push_back("run.N400.ust-0.0458.rhost0.3.seed"+to_string(j+1)+".t0.000000.bin");
+                    filenames2.push_back("run.N400.ust-0.0458.rhost0.3.seed" + to_string(j + 1) + ".t0.000000.bin");
                     while (fin0 >> t >> file) {
 
                         filenames2.push_back(file);
@@ -171,14 +176,9 @@ int main(int argc, char* argv[]) {
                     while (!fin1.eof()) {
 
                         //Random particles in acceptance
-                        for (int num = 0; num < 400; num++)
+                        for (int num = 0; num < N; num++)
                         {
-                            if (num == 0)
-                            {
-                                srand(nevents);
-                            }
-                               
-                            flag[num] = rand() % 2;
+                            flag[num] = dis(generator);
                         }
                         if ((k >= 2) & (k < 6))
                         {
@@ -228,7 +228,7 @@ int main(int argc, char* argv[]) {
                             if (k == 6)
                             {
                                 t = ibuff;
-                             //   cout << "t = " << ibuff << endl;
+                                //   cout << "t = " << ibuff << endl;
                             }
 
                         }
@@ -240,7 +240,7 @@ int main(int argc, char* argv[]) {
                         //t=0 counters
                         vector<int> cnts0(Nalphas);
 
-                           
+
                         // Process particles
                         double x, y, z, vx, vy, vz;
 
@@ -264,14 +264,11 @@ int main(int argc, char* argv[]) {
                                 {
                                     z = buff;
 
-                               //     int indz = static_cast<int>((z / L) / dalpha) + 1;
+                                    int indz = static_cast<int>((z / L) / dalpha) + 1;
                                     if (flag[iN] == 1)
-                                        for (int s = 0; s < Nalphas; s++) {
-                                            if (abs(z / L) <= float(s) / Nalphas)
-                                            {   
-                                                cnts[s]++;
-                                            }
-                                        }
+                                 //   if (iN>=N/2)
+                                        cnts[indz]++;
+
                                 }
 
                                 k++;
@@ -296,8 +293,8 @@ int main(int argc, char* argv[]) {
                             }
                         }
                         // Compute the prefix sums
-                  //      for (int i = 1; i < Nalphas; i++)
-                  //          cnts[i] += cnts[i - 1];
+                        for (int i = 1; i < Nalphas; i++)
+                            cnts[i] += cnts[i - 1];
 
                         // Add the counts to the statistics
                         if (cnts[1] > 0)
@@ -317,56 +314,58 @@ int main(int argc, char* argv[]) {
                     }
                 }
                 else {
-                    cout << "Cannot open file " << filename << " j=" << j+1 << endl;
+                    cout << "Cannot open file " << filename << " j=" << j + 1 << endl;
                     return 1;
                 }
-            
-            
-            fout << nevents << " # Number of events" << endl;
-            fout << setw(tabsize) << "alpha" << " "
-                << setw(tabsize) << "mean" << " "
-                << setw(tabsize) << "error" << " "
-                << setw(tabsize) << "F2/F1" << " "
-                << setw(tabsize) << "errorF21" << " "
-                << setw(tabsize) << "F3/F1" << " "
-                << setw(tabsize) << "errorF31" << " "
-                << setw(tabsize) << "F4/F1" << " "
-                << setw(tabsize) << "errorF41" << " "
-                << setw(tabsize) << "F2/F1^2" << " "
-                << setw(tabsize) << "errorC21" << " "
-                << setw(tabsize) << "F3/F1^3" << " "
-                << setw(tabsize) << "errorC31" << " "
-                << setw(tabsize) << "F4/F1^4" << " "
-                << setw(tabsize) << "errorC41" << " ";
-            fout << endl;
+            }
 
-            for (int i = 0; i < Nalphas; i++) {
-            double alpha = stats[i].GetMean()/ stats[Nalphas-1].GetMean();
-                fout << setw(tabsize) << alpha << " "
-                    << setw(tabsize) << stats[i].GetMean() << " "
-                    << setw(tabsize) << stats[i].GetMeanError() << " "
-                    << setw(tabsize) << stats[i].GetFactorialCumulantRatio(2, 1) << " "
-                    << setw(tabsize) << stats[i].GetFactorialCumulantRatioError(2, 1) << " "
-                    << setw(tabsize) << stats[i].GetFactorialCumulantRatio(3, 1) << " "
-                    << setw(tabsize) << stats[i].GetFactorialCumulantRatioError(3, 1) << " "
-                    << setw(tabsize) << stats[i].GetFactorialCumulantRatio(4, 1) << " "
-                    << setw(tabsize) << stats[i].GetFactorialCumulantRatioError(4, 1) << " "
-                    << setw(tabsize) << stats[i].GetReducedFactorialCumulant(2) << " "
-                    << setw(tabsize) << stats[i].GetReducedFactorialCumulantError(2) << " "
-                    << setw(tabsize) << stats[i].GetReducedFactorialCumulant(3) << " "
-                    << setw(tabsize) << stats[i].GetReducedFactorialCumulantError(3) << " "
-                    << setw(tabsize) << stats[i].GetReducedFactorialCumulant(4) << " "
-                    << setw(tabsize) << stats[i].GetReducedFactorialCumulantError(4) << " ";
+                fout << times[ifile] << " # Time" << endl;
+                fout << nevents << " # Number of events" << endl;
+                fout << setw(tabsize) << "alpha" << " "
+                    << setw(tabsize) << "mean" << " "
+                    << setw(tabsize) << "error" << " "
+                    << setw(tabsize) << "F2/F1" << " "
+                    << setw(tabsize) << "errorF21" << " "
+                    << setw(tabsize) << "F3/F1" << " "
+                    << setw(tabsize) << "errorF31" << " "
+                    << setw(tabsize) << "F4/F1" << " "
+                    << setw(tabsize) << "errorF41" << " "
+                    << setw(tabsize) << "F2/F1^2" << " "
+                    << setw(tabsize) << "errorC21" << " "
+                    << setw(tabsize) << "F3/F1^3" << " "
+                    << setw(tabsize) << "errorC31" << " "
+                    << setw(tabsize) << "F4/F1^4" << " "
+                    << setw(tabsize) << "errorC41" << " ";
                 fout << endl;
 
-            }
-            fout << endl;
-           
-        }
-    }
-    fout.close();
+                for (int i = 0; i < Nalphas; i++) {
+                    double alpha = stats[i].GetMean() / stats[Nalphas - 1].GetMean();
+                    fout << setw(tabsize) << alpha << " "
+                        << setw(tabsize) << stats[i].GetMean() << " "
+                        << setw(tabsize) << stats[i].GetMeanError() << " "
+                        << setw(tabsize) << stats[i].GetFactorialCumulantRatio(2, 1) << " "
+                        << setw(tabsize) << stats[i].GetFactorialCumulantRatioError(2, 1) << " "
+                        << setw(tabsize) << stats[i].GetFactorialCumulantRatio(3, 1) << " "
+                        << setw(tabsize) << stats[i].GetFactorialCumulantRatioError(3, 1) << " "
+                        << setw(tabsize) << stats[i].GetFactorialCumulantRatio(4, 1) << " "
+                        << setw(tabsize) << stats[i].GetFactorialCumulantRatioError(4, 1) << " "
+                        << setw(tabsize) << stats[i].GetReducedFactorialCumulant(2) << " "
+                        << setw(tabsize) << stats[i].GetReducedFactorialCumulantError(2) << " "
+                        << setw(tabsize) << stats[i].GetReducedFactorialCumulant(3) << " "
+                        << setw(tabsize) << stats[i].GetReducedFactorialCumulantError(3) << " "
+                        << setw(tabsize) << stats[i].GetReducedFactorialCumulant(4) << " "
+                        << setw(tabsize) << stats[i].GetReducedFactorialCumulantError(4) << " ";
+                    fout << endl;
 
-    return 0;
+                }
+                fout << endl;
+
+            
+        }
+            fout.close();
+
+        return 0;
+    
 }
 
 
